@@ -1,0 +1,27 @@
+//get the code from github repo
+node{
+echo "job name is: ${env.JOB_NAME}"
+echo "node name is: ${env.NODE_NAME}"
+def mavenHome = tool name: 'maven3.9.4'
+ stage ('checkoutcode'){
+ git branch: 'development', credentialsId: '86a0a89d-1e02-40a8-b3e7-eb6801913c76', url: 'https://github.com/rg-devops-jan-batch/facebook.git'
+}
+//do the build by using maven build tool 
+stage ('build'){
+sh "${mavenHome}/bin/mvn clean package"
+}
+//excute the sonarqube report
+stage ('excute sonarqube report'){
+sh "${mavenHome}/bin/mvn sonar:sonar"
+}
+//upload the artifacts into artifact Repo
+stage ('upload artifacts'){
+sh "${mavenHome}/bin/mvn deploy"
+}
+//deploy aplication into tomcat server
+stage ('deploy applications in tomcat server'){
+sshagent(['52b07029-47ac-45d2-b409-80f5f77973bd']) {
+   sh "scp -o stricthostchecking=no target/maven-web-aplications.war ec2-user@13.53.122.101:/opt/apache-tomcat-10.1.15/webapps/"
+}
+}
+}
